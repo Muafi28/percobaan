@@ -1,0 +1,213 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <title>Jurnal Guru MI Al Iman</title>
+  <script src="https://cdn.jsdelivr.net/npm/xlsx/dist/xlsx.full.min.js"></script>
+  <style>
+    body {
+      font-family: 'Segoe UI', sans-serif;
+      background: #f4fff6;
+      margin: 20px;
+    }
+    h2 {
+      color: #2e7d32;
+    }
+    table {
+      border-collapse: collapse;
+      width: 100%;
+      margin-bottom: 20px;
+    }
+    th, td {
+      border: 1px solid #aaa;
+      padding: 8px;
+      text-align: center;
+    }
+    th {
+      background-color: #c8e6c9;
+    }
+    input, textarea {
+      width: 100%;
+      padding: 5px;
+      border: 1px solid #aaa;
+      border-radius: 5px;
+    }
+    button {
+      background-color: #43a047;
+      color: white;
+      border: none;
+      padding: 10px 20px;
+      margin: 5px 5px 15px 0;
+      border-radius: 5px;
+      cursor: pointer;
+    }
+    button:hover {
+      background-color: #388e3c;
+    }
+    .rekap {
+      margin-top: 30px;
+    }
+    .form-group {
+      margin: 10px 0;
+    }
+    label {
+      font-weight: bold;
+      display: inline-block;
+      margin-bottom: 5px;
+    }
+  </style>
+</head>
+<body>
+
+  <h2>🕌 بِسْمِ اللَّهِ الرَّحْمَنِ الرَّحِيم <br>JURNAL GURU MI AL IMAN KOTA MALANG</h2>
+
+  <p><strong>Hari / Tanggal:</strong> <span id="tanggal"></span></p>
+
+  <div class="form-group">
+    <label for="namaGuru">Nama Guru:</label>
+    <input type="text" id="namaGuru" placeholder="Ketik nama lengkap guru di sini">
+  </div>
+
+  <table id="jurnalTable">
+    <thead>
+      <tr>
+        <th>Jam Ke-</th>
+        <th>Kelas</th>
+        <th>Mapel</th>
+        <th>Materi Ajar</th>
+        <th>Jumlah Siswa</th>
+        <th>Siswa Hadir / Jumlah</th>
+        <th>Siswa Tidak Hadir / Nama / Ket</th>
+        <th>Catatan Kelakuan</th>
+      </tr>
+    </thead>
+    <tbody>
+      <script>
+        for(let i=1;i<=9;i++){
+          document.write(`
+            <tr>
+              <td>${i}</td>
+              <td><input type="text" placeholder="3A / 4B ..."></td>
+              <td><input type="text" placeholder="Mapel"></td>
+              <td><input type="text" placeholder="Materi hari ini"></td>
+              <td><input type="number"></td>
+              <td><input type="text"></td>
+              <td><textarea rows="2"></textarea></td>
+              <td><textarea rows="2"></textarea></td>
+            </tr>
+          `);
+        }
+      </script>
+    </tbody>
+  </table>
+
+  <button onclick="saveJurnal()">💾 Simpan</button>
+  <button onclick="exportExcel()">📤 Export ke Excel</button>
+
+  <div class="rekap">
+    <h3>📊 Rekap Mingguan & Bulanan</h3>
+    <table>
+      <thead>
+        <tr>
+          <th>Periode</th>
+          <th>Jumlah Kehadiran</th>
+          <th>Jumlah Ketidakhadiran</th>
+          <th>Catatan Khusus</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>Mingguan</td>
+          <td>---</td>
+          <td>---</td>
+          <td>---</td>
+        </tr>
+        <tr>
+          <td>Bulanan</td>
+          <td>---</td>
+          <td>---</td>
+          <td>---</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <script>
+    const hari = ['Minggu','Senin','Selasa','Rabu','Kamis','Jumat','Sabtu'];
+    const bulan = ['Januari','Februari','Maret','April','Mei','Juni','Juli','Agustus','September','Oktober','November','Desember'];
+    const now = new Date();
+    const tglFormat = hari[now.getDay()] + ', ' + now.getDate() + ' ' + bulan[now.getMonth()] + ' ' + now.getFullYear();
+    document.getElementById("tanggal").innerText = tglFormat;
+
+    function updateRekap() {
+      let hadirTotal = 0;
+      let tidakHadirTotal = 0;
+      const rows = document.querySelectorAll("#jurnalTable tbody tr");
+
+      rows.forEach(row => {
+        const hadirField = row.cells[5].querySelector('input');
+        const tidakHadirField = row.cells[6].querySelector('textarea');
+
+        if (hadirField && hadirField.value) {
+          const parts = hadirField.value.split('/');
+          const hadir = parseInt(parts[0]) || 0;
+          hadirTotal += hadir;
+        }
+
+        if (tidakHadirField && tidakHadirField.value.trim()) {
+          const entries = tidakHadirField.value.split(/[\n,]+/).filter(e => e.trim() !== '');
+          tidakHadirTotal += entries.length;
+        }
+      });
+
+      document.querySelectorAll('.rekap tbody tr').forEach((tr) => {
+        tr.cells[1].innerText = hadirTotal;
+        tr.cells[2].innerText = tidakHadirTotal;
+        tr.cells[3].innerText = 'Tercatat otomatis pada ' + tglFormat;
+      });
+    }
+
+    function saveJurnal() {
+      let rows = document.querySelectorAll("#jurnalTable tbody tr");
+      let data = {
+        namaGuru: document.getElementById("namaGuru").value,
+        tanggal: tglFormat,
+        rows: []
+      };
+      rows.forEach(row => {
+        let inputs = row.querySelectorAll("input, textarea");
+        let rowData = [];
+        inputs.forEach(input => rowData.push(input.value));
+        data.rows.push(rowData);
+      });
+      localStorage.setItem("jurnalData", JSON.stringify(data));
+      updateRekap();
+      alert("✅ Alhamdulillah Data jurnal berhasil disimpan & rekap diperbarui.");
+    }
+
+    function exportExcel() {
+      const namaGuru = document.getElementById("namaGuru").value || "Jurnal-Guru";
+      let table = document.getElementById("jurnalTable");
+      let wb = XLSX.utils.table_to_book(table, { sheet: "Jurnal Guru" });
+      XLSX.writeFile(wb, `Jurnal-${namaGuru}.xlsx`);
+    }
+
+    window.onload = () => {
+      let saved = localStorage.getItem("jurnalData");
+      if (saved) {
+        let data = JSON.parse(saved);
+        document.getElementById("namaGuru").value = data.namaGuru;
+        let rows = document.querySelectorAll("#jurnalTable tbody tr");
+        rows.forEach((row, i) => {
+          let inputs = row.querySelectorAll("input, textarea");
+          if (data.rows[i]) {
+            inputs.forEach((input, j) => input.value = data.rows[i][j]);
+          }
+        });
+        updateRekap();
+      }
+    };
+  </script>
+
+</body>
+</html>
